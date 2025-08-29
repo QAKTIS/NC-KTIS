@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบค้นหาข้อมูลออก COA</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .search-input {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        .search-input:focus {
+            background: rgba(255, 255, 255, 1);
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+        .search-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+        }
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        .data-card {
+            background: linear-gradient(145deg, #ffffff, #f0f4f8);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            transition: all 0.3s ease;
+        }
+        .data-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.2);
+        }
+        .data-label {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4">
+    <div class="container mx-auto max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">
+                🔍 ระบบค้นหาข้อมูลออก COA 📊
+            </h1>
+            <p class="text-white/80 text-lg">ค้นหาข้อมูลด้วย Lot no ตามช่วงเวลา</p>
+        </div>
+
+        <!-- Search Section -->
+        <div class="glass-card rounded-2xl p-6 md:p-8 mb-8 shadow-2xl">
+            <div class="flex flex-col gap-4">
+                <label class="block text-white font-semibold text-lg">
+                    🏷️ Lot no ตามช่วง
+                </label>
+                <div class="flex flex-col md:flex-row gap-4 items-stretch">
+                    <div class="flex-1 relative">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            class="search-input w-full px-4 py-3 pr-12 rounded-xl text-lg"
+                            placeholder="เช่น: 220825 11:00 หรือ 220825 11.00"
+                        >
+                        <button 
+                            id="clearBtn"
+                            onclick="clearInput()" 
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xl font-bold transition-colors duration-200 hidden"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    <button 
+                        onclick="searchData()" 
+                        class="search-btn text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg"
+                    >
+                        🔍 ค้นหา
+                    </button>
+                </div>
+                <p class="text-white/70 text-sm">
+                    💡 รูปแบบ: DDMMYY HH:MM หรือ DDMMYY HH.MM
+                </p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsContainer" class="hidden">
+            <h2 class="text-2xl font-bold text-white mb-6 text-center">
+                📋 ผลการค้นหา
+            </h2>
+            <div id="dataDisplay" class="space-y-6"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-16 pb-8">
+        <div class="container mx-auto max-w-4xl">
+            <div class="glass-card rounded-2xl p-6 text-center shadow-2xl">
+                <h3 class="text-white font-semibold text-lg mb-2">
+                    ระบบค้นหาข้อมูลออก COA
+                </h3>
+                <p class="text-white/70 text-sm">
+                    พัฒนาโดย <span class="font-semibold text-white">THANAWAT RUNGRAT</span>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Parse search input and validate format
+        function parseSearchInput(input) {
+            const cleaned = input.trim().replace(/\./g, ':');
+            
+            // Match DDMMYY HH:MM or DDMMYY HH format
+            const match = cleaned.match(/^(\d{6})\s+(\d{1,2})(?::(\d{2}))?$/);
+            if (!match) return null;
+            
+            const dateStr = match[1];
+            const hour = parseInt(match[2]);
+            const minute = match[3] ? parseInt(match[3]) : 0;
+            
+            if (hour > 23 || minute > 59) return null;
+            
+            return {
+                date: dateStr,
+                time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+            };
+        }
+
+        // Check if search time falls within data range
+        function isTimeInRange(searchDateTime, dataRange) {
+            if (!dataRange || typeof dataRange !== 'string') return false;
+            
+            console.log('Checking:', searchDateTime, 'against:', dataRange);
+            
+            // Handle different formats of dataRange
+            const parts = dataRange.trim().split(' ');
+            if (parts.length < 2) return false;
+            
+            const dataDate = parts[0];
+            const timeRange = parts.slice(1).join(' ');
+            
+            // Check date match first
+            if (searchDateTime.date !== dataDate) return false;
+            
+            // Handle time range
+            if (timeRange.includes('-')) {
+                const [startTime, endTime] = timeRange.split('-');
+                const searchTime = searchDateTime.time;
+                
+                return searchTime >= startTime.trim() && searchTime <= endTime.trim();
+            } else {
+                // If no range, check exact time match
+                return searchDateTime.time === timeRange.trim();
+            }
+        }
+
+        // Search function with Google Apps Script integration
+        async function searchData() {
+            const searchInput = document.getElementById('searchInput').value;
+            
+            if (!searchInput.trim()) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '⚠️ กรุณากรอกข้อมูล',
+                    text: 'กรุณากรอก Lot no ตามช่วงที่ต้องการค้นหา',
+                    confirmButtonColor: '#667eea'
+                });
+                return;
+            }
+
+            const parsed = parseSearchInput(searchInput);
+            if (!parsed) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ รูปแบบไม่ถูกต้อง',
+                    text: 'กรุณากรอกในรูปแบบ DDMMYY HH:MM หรือ DDMMYY HH.MM',
+                    confirmButtonColor: '#667eea'
+                });
+                return;
+            }
+
+            // Show loading
+            Swal.fire({
+                title: '🔍 กำลังค้นหาข้อมูล...',
+                text: 'กรุณารอสักครู่',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                // Call Google Apps Script function
+                google.script.run
+                    .withSuccessHandler(function(data) {
+                        Swal.close();
+                        
+                        console.log('Received data:', data);
+                        console.log('Search criteria:', parsed);
+                        
+                        // Find matching records
+                        const matchingRecords = data.filter(record => {
+                            console.log('Checking record:', record);
+                            const match = isTimeInRange(parsed, record['Lot no ตามช่วง']);
+                            console.log('Match result:', match);
+                            return match;
+                        });
+
+                        console.log('Matching records found:', matchingRecords.length);
+
+                        if (matchingRecords.length === 0) {
+                            // Show debug info
+                            let debugInfo = 'ข้อมูลที่มีในระบบ:\n';
+                            data.slice(0, 5).forEach((record, index) => {
+                                debugInfo += `${index + 1}. ${record['Lot no ตามช่วง'] || 'ไม่มีข้อมูล'}\n`;
+                            });
+                            
+                            Swal.fire({
+                                icon: 'info',
+                                title: '📭 ไม่พบข้อมูล',
+                                text: `ไม่พบข้อมูล Lot no ตามช่วง ในระบบ\n\nค้นหา: ${parsed.date} ${parsed.time}\n\n${debugInfo}`,
+                                confirmButtonColor: '#667eea'
+                            });
+                            return;
+                        }
+
+                        displayResults(matchingRecords);
+                    })
+                    .withFailureHandler(function(error) {
+                        Swal.close();
+                        Swal.fire({
+                            icon: 'error',
+                            title: '❌ เกิดข้อผิดพลาด',
+                            text: 'ไม่สามารถเชื่อมต่อกับระบบได้: ' + error.message,
+                            confirmButtonColor: '#667eea'
+                        });
+                        console.error('Error:', error);
+                    })
+                    .getData();
+                
+            } catch (error) {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: '❌ เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถเชื่อมต่อกับระบบได้ กรุณาลองใหม่อีกครั้ง',
+                    confirmButtonColor: '#667eea'
+                });
+                console.error('Error:', error);
+            }
+        }
+
+        // Display search results
+        function displayResults(records) {
+            const container = document.getElementById('resultsContainer');
+            const display = document.getElementById('dataDisplay');
+            
+            display.innerHTML = '';
+            
+            records.forEach((record, index) => {
+                const card = document.createElement('div');
+                card.className = 'data-card rounded-2xl p-6 shadow-lg';
+                
+                // Add record number header
+                const recordHeader = document.createElement('div');
+                recordHeader.className = 'mb-4 text-center';
+                recordHeader.innerHTML = `
+                    <h3 class="text-lg font-bold text-purple-800 bg-purple-100 px-4 py-2 rounded-lg inline-block">
+                        📋 ข้อมูลที่ ${index + 1}
+                    </h3>
+                `;
+                card.appendChild(recordHeader);
+
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+                
+                // Define all fields with their labels and emojis
+                const fields = [
+                    { key: 'Plant บรรจุ', label: 'Plant บรรจุ', emoji: '🏭' },
+                    { key: 'ยุ้ง/Silo', label: 'ยุ้ง/Silo', emoji: '🏪' },
+                    { key: 'ชนิดน้ำตาลทราย', label: 'ชนิดน้ำตาลทราย', emoji: '🍯' },
+                    { key: 'Lot no', label: 'Lot no', emoji: '🏷️' },
+                    { key: 'Lot no ตามช่วง', label: 'Lot no ตามช่วง', emoji: '📅' },
+                    { key: 'Batch', label: 'Batch', emoji: '🔢' },
+                    { key: 'ค่าสี', label: 'ค่าสี', emoji: '🎨' },
+                    { key: 'ขนาดเม็ด', label: 'ขนาดเม็ด', emoji: '📏' },
+                    { key: 'Sediment', label: 'Sediment', emoji: '🧪' },
+                    { key: 'หมายเหตุ', label: 'หมายเหตุ', emoji: '📝' }
+                ];
+
+                fields.forEach(field => {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'space-y-2';
+                    
+                    const isHighlight = field.key === 'Lot no ตามช่วง';
+                    const bgClass = isHighlight ? 'bg-blue-50' : 'bg-gray-50';
+                    const textClass = isHighlight ? 'font-semibold text-blue-800' : '';
+                    
+                    fieldDiv.innerHTML = `
+                        <div class="text-sm font-semibold text-gray-700">
+                            <span style="font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;">${field.emoji}</span> 
+                            ${field.label}
+                        </div>
+                        <div class="${bgClass} p-3 rounded-lg ${textClass}">
+                            ${record[field.key] || '-'}
+                        </div>
+                    `;
+                    
+                    gridContainer.appendChild(fieldDiv);
+                });
+                
+                card.appendChild(gridContainer);
+                display.appendChild(card);
+            });
+            
+            container.classList.remove('hidden');
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Clear input function
+        function clearInput() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearBtn').classList.add('hidden');
+            document.getElementById('searchInput').focus();
+        }
+
+        // Show/hide clear button based on input content
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const clearBtn = document.getElementById('clearBtn');
+            if (e.target.value.trim() !== '') {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+        });
+
+        // Allow Enter key to trigger search
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchData();
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975b471f52bc1e38',t:'MTc1NjI5NDY1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
