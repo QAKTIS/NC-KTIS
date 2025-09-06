@@ -14,15 +14,43 @@
 
   <!-- Android / PWA -->
   <link rel="manifest" href="./manifest.webmanifest">
-  <meta name="theme-color" content="#3246fa">
+  <meta name="theme-color" content="#E53935">
+
+  <!-- Open Graph (Facebook, LINE, LinkedIn) -->
+  <meta property="og:title" content="NC KTIS - ระบบจัดการ NC เคทีเอส">
+  <meta property="og:description" content="ระบบติดตามและจัดการ NC ของ KTIS ใช้งานง่าย เข้าถึงได้ทุกที่ผ่านมือถือและคอมพิวเตอร์">
+  <meta property="og:image" content="https://qaktis.github.io/images/android-chrome-512.png">
+  <meta property="og:url" content="https://qaktis.github.io/">
+  <meta property="og:type" content="website">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="NC KTIS - ระบบจัดการ NC เคทีเอส">
+  <meta name="twitter:description" content="ระบบติดตามและจัดการ NC ของ KTIS ใช้งานง่าย เข้าถึงได้ทุกที่ผ่านมือถือและคอมพิวเตอร์">
+  <meta name="twitter:image" content="https://qaktis.github.io/images/android-chrome-512.png">
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #FFE3E6 0%, #FFC1C1 35%, #FF8A80 100%);
+      background-attachment: fixed;
+    }
+    .app {
+      position: relative;
+      width: 100%;
+      height: 100svh;
+      border: 0;
+      background: transparent;
+    }
+  </style>
 </head>
-<body style="margin:0;">
-  <!-- แสดงเนื้อหาจาก Google Apps Script -->
-  <iframe 
+<body>
+  <iframe
+    class="app"
     src="https://script.google.com/macros/s/AKfycbw02mklE19LU-syDVmxt0B_xMl6wuUQEQilBpG9oHgWtl9JSrquAbDf5A_oJotC9NI/exec"
-    style="width:100%; height:100vh; border:0;" 
-    frameborder="0"
-    scrolling="yes">
+    scrolling="yes"
+    frameborder="0">
   </iframe>
 </body>
 </html>
